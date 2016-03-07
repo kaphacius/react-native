@@ -14,6 +14,7 @@ const path = require('path');
 const parseCommandLine = require('../util/parseCommandLine');
 const findXcodeProject = require('./findXcodeProject');
 const parseIOSSimulatorsList = require('./parseIOSSimulatorsList');
+const getLocalIP = require('../util/getLocalIP');
 const Promise = require('promise');
 
 /**
@@ -73,6 +74,25 @@ function _runIOS(argv, config, resolve, reject) {
   const appPath = `build/Build/Products/Debug-iphonesimulator/${inferredSchemeName}.app`;
   console.log(`Installing ${appPath}`);
   child_process.spawnSync('xcrun', ['simctl', 'install', 'booted', appPath], {stdio: 'inherit'});
+
+  function executePlistBuddyCommand(command, plist) {
+    return child_process.execFileSync(
+      '/usr/libexec/PlistBuddy', ['-c', command, plist], {encoding: 'utf8'}
+    ).trim();
+  }
+
+  const plist = path.join(appPath, 'Info.plist');
+
+  const debuggerHostname = executePlistBuddyCommand('Print:RNDebuggerHostname', plist);
+  const debuggerPort = executePlistBuddyCommand('Print:RNDebuggerPort', plist);
+
+  if (!debuggerHostname) {
+    executePlistBuddyCommand('Add:RNDebuggerHostname string ' + getLocalIP(), plist);
+  }
+
+  if (!debuggerPort) {
+    executePlistBuddyCommand('Add:RNDebuggerPort integer 8081', plist);
+  }
 
   const bundleID = child_process.execFileSync(
     '/usr/libexec/PlistBuddy',
