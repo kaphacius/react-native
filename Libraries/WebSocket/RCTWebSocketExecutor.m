@@ -48,12 +48,12 @@ RCT_EXPORT_MODULE()
 
 - (void)setUp
 {
-  if (!_url) {
-    NSUserDefaults *standardDefaults = [NSUserDefaults standardUserDefaults];
-    NSInteger port = [standardDefaults integerForKey:@"websocket-executor-port"] ?: 8081;
-    NSString *URLString = [NSString stringWithFormat:@"http://localhost:%zd/debugger-proxy?role=client", port];
-    _url = [RCTConvert NSURL:URLString];
-  }
+    if (!_url) {
+        NSString *hostname = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"RNDebuggerHostname"] ?: @"localhost";
+        NSInteger port = [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"RNDebuggerPort"] integerValue] ?: 8081;
+        NSString *URLString = [NSString stringWithFormat:@"http://%@:%zd/debugger-proxy?role=client", hostname, port];
+        _url = [RCTConvert NSURL:URLString];
+    }
 
   _jsQueue = dispatch_queue_create("com.facebook.React.WebSocketExecutor", DISPATCH_QUEUE_SERIAL);
   _socket = [[RCTSRWebSocket alloc] initWithURL:_url];
